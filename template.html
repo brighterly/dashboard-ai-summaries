@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Summaries Dashboard — Brighterly</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e1e4ed;
+    --muted: #8b8fa3;
+    --accent: #6c5ce7;
+    --accent2: #00cec9;
+    --green: #00b894;
+    --red: #ff6b6b;
+    --orange: #fdcb6e;
+    --blue: #74b9ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+    min-height: 100vh;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .header h1 span { color: var(--accent); }
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .date-picker-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+  }
+  .date-picker-wrap svg {
+    width: 18px;
+    height: 18px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .date-picker-wrap input {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    width: 220px;
+    outline: none;
+    cursor: pointer;
+  }
+  /* Flatpickr dark theme overrides */
+  .flatpickr-calendar {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5) !important;
+    border-radius: 12px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+  .flatpickr-months .flatpickr-month,
+  .flatpickr-current-month .flatpickr-monthDropdown-months {
+    background: var(--card) !important;
+    color: var(--text) !important;
+  }
+  .flatpickr-current-month input.cur-year {
+    color: var(--text) !important;
+  }
+  .flatpickr-months .flatpickr-prev-month,
+  .flatpickr-months .flatpickr-next-month {
+    fill: var(--text) !important;
+    color: var(--text) !important;
+  }
+  .flatpickr-months .flatpickr-prev-month:hover,
+  .flatpickr-months .flatpickr-next-month:hover {
+    fill: var(--accent) !important;
+    color: var(--accent) !important;
+  }
+  span.flatpickr-weekday {
+    color: var(--muted) !important;
+    background: transparent !important;
+    font-weight: 600 !important;
+  }
+  .flatpickr-day {
+    color: var(--text) !important;
+    border-radius: 6px !important;
+  }
+  .flatpickr-day:hover {
+    background: var(--border) !important;
+    border-color: var(--border) !important;
+  }
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: #fff !important;
+  }
+  .flatpickr-day.inRange {
+    background: rgba(108,92,231,0.2) !important;
+    border-color: transparent !important;
+    box-shadow: -5px 0 0 rgba(108,92,231,0.2), 5px 0 0 rgba(108,92,231,0.2) !important;
+  }
+  .flatpickr-day.today {
+    border-color: var(--accent) !important;
+  }
+  .flatpickr-day.flatpickr-disabled {
+    color: var(--border) !important;
+  }
+  .flatpickr-innerContainer {
+    border-bottom: none !important;
+  }
+  .dayContainer {
+    padding: 4px !important;
+  }
+  .generated-at {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .card-value {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .card-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .accent-val { color: var(--accent); }
+  .green-val { color: var(--green); }
+  .blue-val { color: var(--blue); }
+  .orange-val { color: var(--orange); }
+  .section {
+    margin-bottom: 32px;
+  }
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .chart-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .chart-container canvas {
+    max-height: 320px;
+  }
+  .exp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .exp-table th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .exp-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .exp-table tr:last-child td { border-bottom: none; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-control { background: rgba(108,92,231,0.15); color: var(--accent); }
+  .badge-test { background: rgba(0,206,201,0.15); color: var(--accent2); }
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 768px) {
+    .two-col { grid-template-columns: 1fr; }
+    body { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1><span>AI Summaries</span> Dashboard</h1>
+    <div class="generated-at" id="generatedAt"></div>
+  </div>
+  <div class="header-controls">
+    <div class="date-picker-wrap" id="datePickerTrigger">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      </svg>
+      <input type="text" id="dateRange" placeholder="Select date range" readonly>
+    </div>
+  </div>
+</div>
+
+<!-- Adoption Section -->
+<div class="section">
+  <div class="section-title">Adoption</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Total AI-Enabled</div>
+      <div class="card-value accent-val" id="totalEnabled">—</div>
+      <div class="card-sub">Customers with ai_summarize = 1</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Active Adopters</div>
+      <div class="card-value green-val" id="activeAdopters">—</div>
+      <div class="card-sub">Visited summary page >2 times</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Adoption Rate</div>
+      <div class="card-value orange-val" id="adoptionRate">—</div>
+      <div class="card-sub">Active adopters / total enabled</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Customers with Any Views</div>
+      <div class="card-value blue-val" id="anyViews">—</div>
+      <div class="card-sub">At least 1 summary page visit</div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Page Views Section -->
+<div class="section">
+  <div class="section-title">Summary Page Views</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Total Page Views</div>
+      <div class="card-value blue-val" id="totalPageViews">—</div>
+      <div class="card-sub" id="totalPageViewsSub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Unique Visitors</div>
+      <div class="card-value accent-val" id="uniqueVisitors">—</div>
+      <div class="card-sub" id="uniqueVisitorsSub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Avg Views / Customer</div>
+      <div class="card-value green-val" id="avgViewsPerCustomer">—</div>
+      <div class="card-sub">Per customer with views</div>
+    </div>
+  </div>
+  <div class="chart-container">
+    <canvas id="chartPageViews"></canvas>
+  </div>
+</div>
+
+<!-- Summary Creations Section -->
+<div class="section">
+  <div class="section-title">Summary Creations</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Summaries Created (DB)</div>
+      <div class="card-value green-val" id="totalDbSummaries">—</div>
+      <div class="card-sub" id="totalDbSummariesSub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Creation Events (Amplitude)</div>
+      <div class="card-value accent-val" id="totalAmpCreations">—</div>
+      <div class="card-sub" id="totalAmpCreationsSub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">View → Creation Rate</div>
+      <div class="card-value orange-val" id="viewToCreationRate">—</div>
+      <div class="card-sub">Summaries created / page views</div>
+    </div>
+  </div>
+  <div class="chart-container">
+    <canvas id="chartCreations"></canvas>
+  </div>
+</div>
+
+<!-- Replay/Recording Section -->
+<div class="section">
+  <div class="section-title">Replay / Recording Views <span style="font-size:13px;color:var(--muted)">(AI-enabled customers only)</span></div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Total Replay Views</div>
+      <div class="card-value blue-val" id="totalReplays">—</div>
+      <div class="card-sub" id="totalReplaysSub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Customers with Replays</div>
+      <div class="card-value accent-val" id="customersWithReplays">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Avg Replays / Customer</div>
+      <div class="card-value green-val" id="avgReplaysPerCustomer">—</div>
+      <div class="card-sub">Watch recap times per customer</div>
+    </div>
+  </div>
+  <div class="chart-container">
+    <canvas id="chartReplays"></canvas>
+  </div>
+</div>
+
+<!-- EXP-90 Section -->
+<div class="section">
+  <div class="section-title">EXP-90: AI Summaries for New Paid Customers</div>
+  <div class="two-col">
+    <div class="card">
+      <h3 style="margin-bottom:16px;font-size:15px;">Rebill Rate</h3>
+      <table class="exp-table">
+        <thead>
+          <tr><th>Variant</th><th>Customers</th><th>Rebilled</th><th>Lost</th><th>Pending</th><th>Rate</th></tr>
+        </thead>
+        <tbody id="rebillTable"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:16px;font-size:15px;">Auto-Renew Conversion</h3>
+      <table class="exp-table">
+        <thead>
+          <tr><th>Variant</th><th>Customers</th><th>Renewals</th><th>Succeeded</th><th>In Progress</th><th>Rate</th></tr>
+        </thead>
+        <tbody id="autorenewTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = /*__DATA_PLACEHOLDER__*/{};
+
+// Date range state
+let dateFrom = null;
+let dateTo = null;
+
+function initDatePickers() {
+  const allDates = [
+    ...DATA.daily_page_views.map(d => d.event_date),
+    ...DATA.daily_creations.map(d => d.event_date),
+    ...DATA.daily_replays.map(d => d.event_date)
+  ].filter(Boolean).sort();
+
+  const minDate = allDates[0] || '2026-01-01';
+  const maxDate = allDates[allDates.length - 1] || '2026-12-31';
+
+  const fp = flatpickr('#dateRange', {
+    mode: 'range',
+    dateFormat: 'M d, Y',
+    defaultDate: [minDate, maxDate],
+    showMonths: 3,
+    animate: true,
+    onChange: function(selectedDates) {
+      if (selectedDates.length === 2) {
+        dateFrom = selectedDates[0];
+        dateTo = selectedDates[1];
+        render();
+      }
+    }
+  });
+
+  dateFrom = fp.selectedDates[0];
+  dateTo = fp.selectedDates[1];
+
+  // Allow clicking the whole wrapper to open the calendar
+  document.getElementById('datePickerTrigger').addEventListener('click', () => fp.open());
+}
+
+function filterByDate(records, dateField = 'event_date') {
+  if (!dateFrom && !dateTo) return records;
+  return records.filter(r => {
+    const d = new Date(r[dateField]);
+    if (dateFrom && d < dateFrom) return false;
+    if (dateTo && d > new Date(dateTo.getTime() + 86400000)) return false;
+    return true;
+  });
+}
+
+function fmt(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toLocaleString();
+}
+
+function pct(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toFixed(2) + '%';
+}
+
+// Chart instances
+let chartPV, chartCR, chartRP;
+
+function chartDefaults() {
+  Chart.defaults.color = '#8b8fa3';
+  Chart.defaults.borderColor = '#2a2d3a';
+  Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, sans-serif';
+}
+
+function makeTimeChart(canvasId, datasets, existingChart) {
+  if (existingChart) existingChart.destroy();
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  return new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16 } } },
+      scales: {
+        x: { type: 'time', time: { unit: 'day', tooltipFormat: 'MMM d, yyyy' }, grid: { display: false } },
+        y: { beginAtZero: true, grid: { color: '#2a2d3a' } }
+      }
+    }
+  });
+}
+
+function render() {
+  // Generated at
+  document.getElementById('generatedAt').textContent = 'Data generated: ' + (DATA.generated_at || '—');
+
+  // Adoption (not date-filtered — aggregate)
+  const ad = DATA.adoption[0] || {};
+  document.getElementById('totalEnabled').textContent = fmt(ad.total_ai_enabled);
+  document.getElementById('activeAdopters').textContent = fmt(ad.active_adopters);
+  document.getElementById('adoptionRate').textContent = pct(ad.adoption_rate_pct);
+  document.getElementById('anyViews').textContent = fmt(ad.customers_with_any_views);
+
+  // Summary page views
+  const pvData = filterByDate(DATA.daily_page_views);
+  const totalPV = pvData.reduce((s, r) => s + (r.page_views || 0), 0);
+  const uniqueV = new Set(); // approximate from daily uniques
+  let maxUV = 0;
+  pvData.forEach(r => { if (r.unique_visitors > maxUV) maxUV = r.unique_visitors; });
+  const totalUV = pvData.reduce((s, r) => s + (r.unique_visitors || 0), 0);
+
+  document.getElementById('totalPageViews').textContent = fmt(totalPV);
+  document.getElementById('totalPageViewsSub').textContent = `In selected period`;
+  const trueUV = (DATA.total_unique_visitors[0] || {}).total_unique_visitors || 0;
+  document.getElementById('uniqueVisitors').textContent = fmt(trueUV);
+  document.getElementById('uniqueVisitorsSub').textContent = `Unique devices (all time)`;
+
+  const spc = DATA.summary_per_customer[0] || {};
+  document.getElementById('avgViewsPerCustomer').textContent = spc.avg_views_per_customer || '—';
+
+  chartPV = makeTimeChart('chartPageViews', [
+    {
+      label: 'Page Views',
+      data: pvData.map(r => ({ x: r.event_date, y: r.page_views })),
+      borderColor: '#74b9ff',
+      backgroundColor: 'rgba(116,185,255,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3
+    },
+    {
+      label: 'Unique Visitors',
+      data: pvData.map(r => ({ x: r.event_date, y: r.unique_visitors })),
+      borderColor: '#6c5ce7',
+      backgroundColor: 'rgba(108,92,231,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3
+    }
+  ], chartPV);
+
+  // Summary creations
+  const crData = filterByDate(DATA.daily_creations);
+  const totalDbSum = crData.reduce((s, r) => s + (r.db_summaries || 0), 0);
+  const totalAmpCr = crData.reduce((s, r) => s + (r.amplitude_creations || 0), 0);
+  const totalPVforRate = crData.reduce((s, r) => s + (r.page_views || 0), 0);
+  const vtcRate = totalPVforRate > 0 ? (totalDbSum / totalPVforRate * 100) : 0;
+
+  document.getElementById('totalDbSummaries').textContent = fmt(totalDbSum);
+  document.getElementById('totalDbSummariesSub').textContent = 'In selected period';
+  document.getElementById('totalAmpCreations').textContent = fmt(totalAmpCr);
+  document.getElementById('totalAmpCreationsSub').textContent = 'In selected period';
+  document.getElementById('viewToCreationRate').textContent = pct(vtcRate);
+
+  chartCR = makeTimeChart('chartCreations', [
+    {
+      label: 'DB Summaries',
+      data: crData.map(r => ({ x: r.event_date, y: r.db_summaries })),
+      borderColor: '#00b894',
+      backgroundColor: 'rgba(0,184,148,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3
+    },
+    {
+      label: 'Amplitude Events',
+      data: crData.map(r => ({ x: r.event_date, y: r.amplitude_creations })),
+      borderColor: '#6c5ce7',
+      backgroundColor: 'rgba(108,92,231,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3
+    },
+    {
+      label: 'View→Creation %',
+      data: crData.map(r => ({ x: r.event_date, y: r.view_to_creation_rate })),
+      borderColor: '#fdcb6e',
+      borderDash: [5, 5],
+      tension: 0.3,
+      pointRadius: 2,
+      yAxisID: 'y1'
+    }
+  ], chartCR);
+
+  // Fix y1 axis for creation chart
+  if (chartCR) {
+    chartCR.options.scales.y1 = {
+      position: 'right',
+      beginAtZero: true,
+      grid: { display: false },
+      ticks: { callback: v => v + '%' }
+    };
+    chartCR.update();
+  }
+
+  // Replays
+  const rpData = filterByDate(DATA.daily_replays);
+  const totalRP = rpData.reduce((s, r) => s + (r.replay_views || 0), 0);
+  const rpc = DATA.replay_per_customer[0] || {};
+
+  document.getElementById('totalReplays').textContent = fmt(totalRP);
+  document.getElementById('totalReplaysSub').textContent = 'In selected period';
+  document.getElementById('customersWithReplays').textContent = fmt(rpc.customers_with_replays);
+  document.getElementById('avgReplaysPerCustomer').textContent = rpc.avg_replays_per_customer || '—';
+
+  chartRP = makeTimeChart('chartReplays', [
+    {
+      label: 'Replay Views',
+      data: rpData.map(r => ({ x: r.event_date, y: r.replay_views })),
+      borderColor: '#74b9ff',
+      backgroundColor: 'rgba(116,185,255,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3
+    },
+    {
+      label: 'Unique Customers',
+      data: rpData.map(r => ({ x: r.event_date, y: r.unique_customers })),
+      borderColor: '#00cec9',
+      backgroundColor: 'rgba(0,206,201,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3
+    }
+  ], chartRP);
+
+  // EXP-90 tables
+  renderExpTable('rebillTable', DATA.exp90_rebill, [
+    { key: 'variant', badge: true },
+    { key: 'total_customers', label: 'Customers' },
+    { key: 'rebilled' },
+    { key: 'lost' },
+    { key: 'pending' },
+    { key: 'rebill_rate_pct', pct: true }
+  ]);
+
+  renderExpTable('autorenewTable', DATA.exp90_autorenew, [
+    { key: 'variant', badge: true },
+    { key: 'total_customers', label: 'Customers' },
+    { key: 'subs_with_renewals', label: 'Renewals' },
+    { key: 'succeeded' },
+    { key: 'in_progress', label: 'In Progress' },
+    { key: 'autorenew_conversion_pct', pct: true }
+  ]);
+}
+
+function renderExpTable(containerId, rows, cols) {
+  const tbody = document.getElementById(containerId);
+  tbody.innerHTML = '';
+  (rows || []).forEach(row => {
+    const tr = document.createElement('tr');
+    cols.forEach(col => {
+      const td = document.createElement('td');
+      const val = row[col.key];
+      if (col.badge) {
+        const cls = val === 'original' ? 'badge-control' : 'badge-test';
+        td.innerHTML = `<span class="badge ${cls}">${val}</span>`;
+      } else if (col.pct) {
+        td.textContent = pct(val);
+      } else {
+        td.textContent = fmt(val);
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+// Init
+chartDefaults();
+initDatePickers();
+render();
+</script>
+</body>
+</html>
