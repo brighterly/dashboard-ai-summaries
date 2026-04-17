@@ -262,6 +262,11 @@
       <div class="card-sub">Customers with ai_summarize = 1</div>
     </div>
     <div class="card">
+      <div class="card-title">Eligible Customers</div>
+      <div class="card-value blue-val" id="eligibleCustomers">—</div>
+      <div class="card-sub">AI-enabled with ≥1 recorded lesson</div>
+    </div>
+    <div class="card">
       <div class="card-title">Active Adopters</div>
       <div class="card-value green-val" id="activeAdopters">—</div>
       <div class="card-sub">Visited summary page >2 times</div>
@@ -269,7 +274,7 @@
     <div class="card">
       <div class="card-title">Adoption Rate</div>
       <div class="card-value orange-val" id="adoptionRate">—</div>
-      <div class="card-sub">Active adopters / total enabled</div>
+      <div class="card-sub">Active adopters / eligible customers</div>
     </div>
     <div class="card">
       <div class="card-title">Customers with Any Views</div>
@@ -472,6 +477,7 @@ function render() {
   // Adoption (not date-filtered — aggregate)
   const ad = DATA.adoption[0] || {};
   document.getElementById('totalEnabled').textContent = fmt(ad.total_ai_enabled);
+  document.getElementById('eligibleCustomers').textContent = fmt(ad.eligible_customers);
   document.getElementById('activeAdopters').textContent = fmt(ad.active_adopters);
   document.getElementById('adoptionRate').textContent = pct(ad.adoption_rate_pct);
   document.getElementById('anyViews').textContent = fmt(ad.customers_with_any_views);

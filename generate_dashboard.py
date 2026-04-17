@@ -33,6 +33,18 @@ kid_to_customer as (
     select k.id as kid_id, k.customer_id
     from `brighterly-gcp.main_app_prod.kids` k
 ),
+customers_with_recordings as (
+    select distinct k.customer_id
+    from `brighterly-gcp.main_app_prod.bookings` b
+    join `brighterly-gcp.main_app_prod.disciplines` d on b.discipline_id = d.id
+    join `brighterly-gcp.main_app_prod.kids` k on d.kid_id = k.id
+    where b.recording_started_at is not null
+),
+eligible_customers as (
+    select ac.customer_id
+    from ai_customers ac
+    join customers_with_recordings cr on ac.customer_id = cr.customer_id
+),
 page_views_per_customer as (
     select
         ktc.customer_id,
@@ -45,13 +57,15 @@ page_views_per_customer as (
 )
 select
     count(distinct ac.customer_id) as total_ai_enabled,
+    count(distinct ec.customer_id) as eligible_customers,
     count(distinct pvc.customer_id) as customers_with_any_views,
     count(distinct case when pvc.view_count > 2 then pvc.customer_id end) as active_adopters,
     round(safe_divide(
         count(distinct case when pvc.view_count > 2 then pvc.customer_id end),
-        count(distinct ac.customer_id)
+        count(distinct ec.customer_id)
     ) * 100, 2) as adoption_rate_pct
 from ai_customers ac
+left join eligible_customers ec on ac.customer_id = ec.customer_id
 left join page_views_per_customer pvc on ac.customer_id = pvc.customer_id
 """)
 
