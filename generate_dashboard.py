@@ -294,7 +294,7 @@ html_template = open(
 
 html_output = html_template.replace("/*__DATA_PLACEHOLDER__*/{}", json.dumps(data, indent=2))
 
-output_path = os.path.join(os.path.dirname(__file__), "dashboard.html")
+output_path = os.path.join(os.path.dirname(__file__), "index.html")
 with open(output_path, "w") as f:
     f.write(html_output)
 
