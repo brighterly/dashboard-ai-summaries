@@ -24,7 +24,7 @@ jobs:
 
       - name: Generate dashboard
         env:
-          GCP_KEY_JSON: ${{ secrets.GCP }}
+          GCP_KEY_JSON: ${{ secrets.GCPKEY }}
         run: python generate_dashboard.py
 
       - name: Commit and push
